@@ -5,7 +5,7 @@
   <meta charset="utf-8" />
   <title>Puzzle Answer</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- Optional: external CSS; inline styles below act as a safety net -->
+  <!-- Optional: external CSS; inline styles below are a safety net -->
   <link rel="stylesheet" href="./style.css" />
   <style>
     /* Safety styles in case style.css isn't loaded */
@@ -33,7 +33,24 @@
       <p>Please enter your name and email once to reveal answers on this device.</p>
 
       <!-- ✅ REAL FORMSPREE FORM (fields + submit button) -->
-      https://formspree.io/f/xrbljyyn
+      <form id="gate-form" action="https://formspree.io/f/xrbljyyn" method="POST">
+        <div class="field">
+          <label for="name">Name</label>
+          <input id="name" name="name" type="text" autocomplete="name" required />
+        </div>
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" autocomplete="email" required />
+        </div>
+
+        <!-- Optional: include which puzzle was first viewed -->
+        <input type="hidden" id="puzzleIdField" name="puzzleId" value="" />
+
+        <div class="actions">
+          <button class="btn" type="submit">Show the answer</button>
+          <span id="gate-msg" class="muted small"></span>
+        </div>
+      </form>
       <!-- ✅ END FORM -->
 
       <p class="muted small">We use this one-time check to reduce spoilers and track engagement.</p>
@@ -47,25 +64,7 @@
         <summary>Privacy &amp; reset</summary>
         <p>Your name &amp; email are stored only in this browser (localStorage).
           <button id="forget" class="btn btn-text" type="button">Forget me on this device</button>
-        </p>
-      </details>
-    </section>
-
-    <!-- Not found: invalid puzzle id or load error -->
-    <section id="not-found" class="card danger" style="display:none;">
-      <h2>Not found</h2>
-      <p>We couldn’t find that puzzle. Please scan a valid QR code from the book.</p>
-    </section>
-  </main>
-
-  <script>
-  // === Inline answers (no external fetch) ===
-  const ANSWERS = [
-    { "id":"01","hero":"Iron Man (Tony Stark)","actor":"Robert Downey Jr." },
-    { "id":"02","hero":"Captain America (Steve Rogers)","actor":"Chris Evans" },
-    { "id":"03","hero":"Thor","actor":"Chris Hemsworth" },
-    { "id":"04","hero":"Hulk (Bruce Banner)","actor":"Mark Ruffalo" },
-    { "id":"05","hero":"Black Widow (Natasha Romanoff)","actor":"Scarlett Johansson" },
+       a Romanoff)","actor":"Scarlett Johansson" },
     { "id":"06","hero":"Hawkeye (Clint Barton)","actor":"Jeremy Renner" },
     { "id":"07","hero":"Spider-Man (Peter Parker)","actor":"Tom Holland" },
     { "id":"08","hero":"Black Panther (T’Challa)","actor":"Chadwick Boseman" },
