@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Superhero Answer Reveal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <style>
+    :root { color-scheme: light dark; --bg:#0b0b0b; --fg:#f5f5f5; --muted:#888; --brand:#4f7cff;}
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin:0; }
+    main { max-width: 720px; margin: 0 auto; padding: 24px; }
+    header { margin: 8px 0 20px; }
+    h1 { font-size: clamp(22px, 5vw, 30px); margin: 0 0 6px; }
+    .card { border: 1px solid #ddd; border-radius: 10px; padding: 18px; }
+    form { display: grid; gap: 12px; }
+    label { font-weight: 600; }
+    input[type="text"], input[type="email"] { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #bbb; font-size: 16px; }
+    button { background: var(--brand); color: white; border: 0; padding: 12px 16px; border-radius: 8px; font-weight: 700; cursor: pointer; }
+    button:disabled { opacity: .7; cursor: wait; }
+    .muted { color: var(--muted); font-size: 0.95rem; }
+    .error { color: #b00020; }
+    .answer { font-size: 1.25rem; line-height: 1.4; }
+    .tag { display: inline-block; padding: 2px 8px; border:1px solid #bbb; border-radius: 999px; font-size:.85rem; color: #555; margin-left: 6px; }
+    .hidden { display: none !important; }
+    footer { margin-top: 24px; font-size: .9rem; color: var(--muted); }
+    .pill { color:#333; background:#f4f7ff; border:1px solid #dae4ff; padding:4px 8px; border-radius:999px; }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Answer Reveal <span id="puzzleTag" class="tag"></span></h1>
+    <p class="muted">Scan the QR code for each puzzle to see that puzzle’s answer.</p>
+  </header>
+
+  <!-- Gate -->
+  <section id="gate" class="card">
+    <h2>Tell us who you are (one-time)</h2>
+    <form id="gateForm" method="POST" novalidate>
+      <input type="hidden" name="_subject" value="Puzzle Answer Access" />
+      <input type="hidden" id="puzzleIdField" name="puzzle_id" />
+      <div class="hidden">
+        <label>Do not fill this field</label>
+        <input type="text" name="website" tabindex="-1" autocomplete="off" />
+      </div>
+      <div>
+        <label for="name">Your Name</label>
+        <input id="name" name="name" type="text" autocomplete="name" required />
+      </div>
+      <div>
+        <label for="email">Your Email</label>
+        <input id="email" name="email" type="email" autocomplete="email" required />
+      </div>
+      <button id="submitBtn" type="submit">Reveal This Answer</button>
+      <div id="formMsg" class="muted" aria-live="polite"></div>
+      <div id="formErr" class="error"></div>
+      <p class="muted">We’ll store a small flag in your browser so you won’t have to enter this again on this device.</p>
+    </form>
+  </section>
+
+  <!-- Answer -->
+  <section id="answer" class="card hidden" aria-live="polite">
+    <h2 id="puzzleTitle">Puzzle</h2>
+    <p class="answer">
+      <strong>Character:</strong> <span id="character"></span><br />
+      <strong>Portrayed by:</strong> <span id="actor"></span>
+    </p>
+    <p class="muted">
+      Seeing this on a shared device? <button class="pill" id="resetBtn" type="button">Not me – clear access</button>
+    </p>
+  </section>
+
+  <footer>
+    <p class="muted">© Your Name — Powered by Formspree & GitHub Pages.</p>
+  </footer>
+</main>
+
+<script>
+const FORM_ENDPOINT = "https://formspree.io/f/xrbljyyn";
+const PUZZLES = {
+  "ironman": { title: "Puzzle #01", character: "Iron Man (Tony Stark)", actor: "Robert Downey Jr." },
+  "captainamerica": { title: "Puzzle #02", character: "Captain America (Steve Rogers)", actor: "Chris Evans" },
+  "thor": { title: "Puzzle #03", character: "Thor", actor: "Chris Hemsworth" },
+  "hulk": { title: "Puzzle #04", character: "Hulk (Bruce Banner)", actor: "Mark Ruffalo" },
+  "blackwidow": { title: "Puzzle #05", character: "Black Widow (Natasha Romanoff)", actor: "Scarlett Johansson" },
+  "hawkeye": { title: "Puzzle #06", character: "Hawkeye (Clint Barton)", actor: "Jeremy Renner" },
+  "spiderman": { title: "Puzzle #07", character: "Spider-Man (Peter Parker)", actor: "Tom Holland" },
+  "blackpanther": { title: "Puzzle #08", character: "Black Panther (T’Challa)", actor: "Chadwick Boseman" },
+  "doctorstrange": { title: "Puzzle #09", character: "Doctor Strange (Stephen Strange)", actor: "Benedict Cumberbatch" },
+  "captainmarvel": { title: "Puzzle #10", character: "Captain Marvel (Carol Danvers)", actor: "Brie Larson" },
+  "antman": { title: "Puzzle #11", character: "Ant-Man (Scott Lang)", actor: "Paul Rudd" },
+  "wasp": { title: "Puzzle #12", character: "The Wasp (Hope van Dyne)", actor: "Evangeline Lilly" },
+  "scarletwitch": { title: "Puzzle #13", character: "Scarlet Witch (Wanda Maximoff)", actor: "Elizabeth Olsen" },
+  "vision": { title: "Puzzle #14", character: "Vision", actor: "Paul Bettany" },
+  "starlord": { title: "Puzzle #15", character: "Star-Lord (Peter Quill)", actor: "Chris Pratt" },
+  "gamora": { title: "Puzzle #16", character: "Gamora", actor: "Zoe Saldana" },
+  "drax": { title: "Puzzle #17", character: "Drax", actor: "Dave Bautista" },
+  "rocket": { title: "Puzzle #18", character: "Rocket", actor: "Bradley Cooper" },
+  "groot": { title: "Puzzle #19", character: "Groot", actor: "Vin Diesel" },
+  "falcon": { title: "Puzzle #20", character: "Falcon (Sam Wilson)", actor: "Anthony Mackie" },
+  "wintersoldier": { title: "Puzzle #21", character: "Winter Soldier (Bucky Barnes)", actor: "Sebastian Stan" },
+  "warmachine": { title: "Puzzle #22", character: "War Machine (James Rhodes)", actor: "Don Cheadle" },
+  "okoye": { title: "Puzzle #23", character: "Okoye", actor: "Danai Gurira" },
+  "shuri": { title: "Puzzle #24", character: "Shuri", actor: "Letitia Wright" },
+  "mantis": { title: "Puzzle #25", character: "Mantis", actor: "Pom Klementieff" },
+  "valkyrie": { title: "Puzzle #26", character: "Valkyrie", actor: "Tessa Thompson" },
+  "wong": { title: "Puzzle #27", character: "Wong", actor: "Benedict Wong" },
+  "nebula": { title: "Puzzle #28", character: "Nebula", actor: "Karen Gillan" },
+  "katebishop": { title: "Puzzle #29", character: "Kate Bishop", actor: "Hailee Steinfeld" },
+  "yelena": { title: "Puzzle #30", character: "Yelena Belova", actor: "Florence Pugh" },
+  "thanos": { title: "Puzzle #31", character: "Thanos", actor: "Josh Brolin" },
+  "loki": { title: "Puzzle #32", character: "Loki", actor: "Tom Hiddleston" },
+  "hela": { title: "Puzzle #33", character: "Hela", actor: "Cate Blanchett" },
+  "killmonger": { title: "Puzzle #34", character: "Erik Killmonger (Erik Stevens)", actor: "Michael B. Jordan" },
+  "ultron": { title: "Puzzle #35", character: "Ultron", actor: "James Spader" },
+  "redskull": { title: "Puzzle #36", character: "Red Skull (Johann Schmidt)", actor: "Hugo Weaving" },
+  "ronan": { title: "Puzzle #37", character: "Ronan the Accuser", actor: "Lee Pace" },
+  "taskmaster": { title: "Puzzle #38", character: "Taskmaster", actor: "Olga Kurylenko" },
+  "mysterio": { title: "Puzzle #39", character: "Mysterio (Quentin Beck)", actor: "Jake Gyllenhaal" },
+  "agatha": { title: "Puzzle #40", character: "Agatha Harkness", actor: "Kathryn Hahn" }
+};
+const ACCESS_KEY = "puzzlebook_player_v1";
+
+const $ = (id) => document.getElementById(id);
+function getPuzzleId() {
+  const url = new URL(window.location.href);
+  return url.searchParams.get("p") || (window.location.hash ? window.location.hash.substring(1) : "");
+}
+function validEmail(email) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim()); }
+function hasAccess() { try { return !!JSON.parse(localStorage.getItem(ACCESS_KEY))?.email; } catch { return false; } }
+function grantAccess(name, email) { localStorage.setItem(ACCESS_KEY, JSON.stringify({ name, email, ts: Date.now() })); }
+function revokeAccess() { localStorage.removeItem(ACCESS_KEY); location.reload(); }
+
+const puzzleId = getPuzzleId();
+const puzzle = PUZZLES[puzzleId];
+
+(function init() {
+  if (!puzzleId || !puzzle) {
+    $("gate").classList.add("hidden");
+    $("answer").classList.remove("hidden");
+    $("puzzleTitle").textContent = "Invalid or missing puzzle link";
+    $("character").textContent = "—";
+    $("actor").textContent = "—";
+    return;
+  }
+  $("puzzleTag").textContent = puzzleId;
+  $("puzzleIdField").value = puzzleId;
+  $("puzzleTitle").textContent = puzzle.title;
+  if (hasAccess()) renderAnswer(puzzle); else wireForm();
+  $("resetBtn").addEventListener("click", revokeAccess);
+})();
+function renderAnswer(puz) {
+  $("gate").classList.add("hidden");
+  $("answer").classList.remove("hidden");
+  $("character").textContent = puz.character;
+  $("actor").textContent = puz.actor;
+}
+function wireForm() {
+  const form = $("gateForm"), submitBtn = $("submitBtn"), msg = $("formMsg"), err = $("formErr");
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault(); err.textContent = ""; msg.textContent = "";
+    const name = $("name").value.trim(), email = $("email").value.trim();
+    if (!name) { err.textContent = "Please enter your name."; return; }
+    if (!email || !validEmail(email)) { err.textContent = "Please enter a valid email."; return; }
+    submitBtn.disabled = true; msg.textContent = "Submitting…";
+    try {
+      const fd = new FormData(form);
+      const res = await fetch(FORM_ENDPOINT, { method: "POST", body: fd, headers: { "Accept": "application/json" } });
+      if (res.ok) { grantAccess(name, email); renderAnswer(puzzle); }
+      else err.textContent = "Oops! There was a problem submitting the form.";
+    } catch { err.textContent = "Network error. Please try again."; }
+    finally { submitBtn.disabled = false; msg.textContent = ""; }
+  });
+}
+</script>
+</body>
+</html>
