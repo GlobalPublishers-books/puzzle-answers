@@ -5,7 +5,7 @@
   <meta charset="utf-8" />
   <title>Puzzle Answer</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- Optional: your external CSS; safe to keep or remove -->
+  <!-- Optional external CSS -->
   <link rel="stylesheet" href="./style.css" />
   <style>
     /* Safety styles in case style.css isn't loaded */
@@ -19,7 +19,7 @@
     .btn { display:inline-block; background:#2a9d8f; color:#fff; padding:.6rem .95rem; border-radius:10px; text-decoration:none; border:0; cursor:pointer; }
     .btn-text { background:transparent; color:#fff; border:1px solid #3b3f49; }
     .muted { color:#a3a3a3; } .small { font-size:.92rem; }
-    .actions { display:flex; gap:.8rem; align-items:center; }
+    .actions { display:flex; gap:.8rem; align-items:center; flex-wrap:wrap; }
   </style>
 </head>
 <body>
@@ -27,32 +27,15 @@
     <!-- Loading -->
     <div id="loading" class="muted">Loading…</div>
 
-    <!-- Gate: shown if user hasn't submitted name/email yet -->
+    <!-- Gate: only shown the first time on a device -->
     <section id="gate" class="card" style="display:none;">
       <h2>One-time check</h2>
       <p>Please enter your name and email once to reveal answers on this device.</p>
 
-      <!-- ✅ ACTUAL FORMSPREE FORM (do not remove) -->
-      <form id="gate-form" action="https://formspree.io/f/xrbljyyn" method="POST" novalidate>
-        <div class="field">
-          <label for="name">Name</label>
-          <input id="name" name="name" type="text" autocomplete="name" required />
-        </div>
-        <div class="field">
-          <label for="email">Email</label>
-          <input id="email" name="email" type="email" autocomplete="email" required />
-        </div>
-
-        <!-- Optional metadata -->
-        <input type="hidden" name="puzzle_id" id="puzzleIdField" value="">
-        <input type="hidden" name="subject" value="GTL signup">
-
-        <div class="actions">
-          <button type="submit" class="btn">Show the answer</button>
-          <span id="gate-msg" class="muted small" aria-live="polite"></span>
-        </div>
-      </form>
+      <!-- ✅ REAL FORMSPREE FORM (Submit button included) -->
+      https://formspree.io/f/xrbljyyn
       <!-- ✅ END FORM -->
+
       <p class="muted small">We use this one-time check to reduce spoilers and track engagement.</p>
     </section>
 
@@ -63,7 +46,26 @@
       <details class="muted small">
         <summary>Privacy &amp; reset</summary>
         <p>Your name &amp; email are stored only in this browser (localStorage).
-        <button id="forget" class="btn btn-text" type="button">rlett Johansson" },
+          <button id="forget" class="btn btn-text" type="button">Forget me on this device</button>
+        </p>
+      </details>
+    </section>
+
+    <!-- Not found: invalid puzzle id or load error -->
+    <section id="not-found" class="card danger" style="display:none;">
+      <h2>Not found</h2>
+      <p>We couldn’t find that puzzle. Please scan a valid QR code from the book.</p>
+    </section>
+  </main>
+
+  <script>
+  // === Inline answers (no external fetch) ===
+  const ANSWERS = [
+    { "id":"01","hero":"Iron Man (Tony Stark)","actor":"Robert Downey Jr." },
+    { "id":"02","hero":"Captain America (Steve Rogers)","actor":"Chris Evans" },
+    { "id":"03","hero":"Thor","actor":"Chris Hemsworth" },
+    { "id":"04","hero":"Hulk (Bruce Banner)","actor":"Mark Ruffalo" },
+    { "id":"05","hero":"Black Widow (Natasha Romanoff)","actor":"Scarlett Johansson" },
     { "id":"06","hero":"Hawkeye (Clint Barton)","actor":"Jeremy Renner" },
     { "id":"07","hero":"Spider-Man (Peter Parker)","actor":"Tom Holland" },
     { "id":"08","hero":"Black Panther (T’Challa)","actor":"Chadwick Boseman" },
@@ -101,7 +103,7 @@
     { "id":"40","hero":"Agatha Harkness","actor":"Kathryn Hahn" }
   ];
 
-  // === App logic (inline; no external JS) ===
+  // === App logic (self-contained) ===
   const STORAGE_KEY = 'gtl_user'; // { name, email, t }
   const qs = new URLSearchParams(window.location.search);
   const id = String(qs.get('id') || '').padStart(2, '0'); // '01'..'40'
@@ -144,21 +146,28 @@
   }
 
   (function init(){
-    // Validate id
+    // 1) Validate id
     if (!/^\d{2}$/.test(id)) { hide(els.loading); show(els.notFound); return; }
 
+    // 2) Find the answer
     const entry = ANSWERS.find(x => x.id === id);
     if (!entry) { hide(els.loading); show(els.notFound); return; }
 
+    // 3) Fill hidden field for Formspree
     if (els.puzzleIdField) els.puzzleIdField.value = id;
 
+    // 4) If we already know this browser, show answer immediately
     const user = getUser();
     if (user && user.email) {
       showAnswer(entry);
-    } else {
-      hide(els.loading); show(els.gate);
+      return;
     }
 
+    // 5) Otherwise show the gate (form)
+    hide(els.loading);
+    show(els.gate);
+
+    // 6) Handle form submit (AJAX to Formspree)
     if (els.form) {
       els.form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -187,6 +196,7 @@
       });
     }
 
+    // 7) Forget button
     if (els.forget) els.forget.addEventListener('click', forgetUser);
   })();
   </script>
