@@ -5,10 +5,11 @@
   <meta charset="utf-8" />
   <title>Puzzle Answer</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Optional: your external CSS; safe to keep or remove -->
   <link rel="stylesheet" href="./style.css" />
   <style>
-    /* Tiny inline safety styles in case style.css hasn’t deployed yet */
-    body { margin:0; font:16px/1.55 system-ui, -apple-system, Segoe UI, Roboto, Arial; background:#0b0c10; color:#e6e6e6; }
+    /* Safety styles in case style.css isn't loaded */
+    body { margin:0; font:16px/1.55 system-ui,-apple-system,Segoe UI,Roboto,Arial; background:#0b0c10; color:#e6e6e6; }
     .container { max-width: 720px; margin: 3rem auto; padding: 0 1rem; }
     .card { background:#16181d; border-radius:12px; padding:1.2rem 1.4rem; margin:1rem 0; }
     .danger { border:1px solid #e76f51; }
@@ -18,48 +19,51 @@
     .btn { display:inline-block; background:#2a9d8f; color:#fff; padding:.6rem .95rem; border-radius:10px; text-decoration:none; border:0; cursor:pointer; }
     .btn-text { background:transparent; color:#fff; border:1px solid #3b3f49; }
     .muted { color:#a3a3a3; } .small { font-size:.92rem; }
+    .actions { display:flex; gap:.8rem; align-items:center; }
   </style>
 </head>
 <body>
   <main class="container">
-    <!-- Loading message -->
+    <!-- Loading -->
     <div id="loading" class="muted">Loading…</div>
 
-    <!-- Gate section: shown if user hasn't submitted name/email yet -->
+    <!-- Gate: shown if user hasn't submitted name/email yet -->
     <section id="gate" class="card" style="display:none;">
       <h2>One-time check</h2>
       <p>Please enter your name and email once to reveal answers on this device.</p>
 
-      <form id="gate-form" action="https://formspree.io/f/xrbljyyn" method="POST">
-        <input type="hidden" name="puzzleId" id="puzzleIdField" value="">
+      <!-- ✅ ACTUAL FORMSPREE FORM (do not remove) -->
+      <form id="gate-form" action="https://formspree.io/f/xrbljyyn" method="POST" novalidate>
         <div class="field">
           <label for="name">Name</label>
-          <input id="name" name="name" type="text" required autocomplete="name" />
+          <input id="name" name="name" type="text" autocomplete="name" required />
         </div>
         <div class="field">
           <label for="email">Email</label>
-          <input id="email" name="email" type="email" required autocomplete="email" />
+          <input id="email" name="email" type="email" autocomplete="email" required />
         </div>
-        <div class="field">
-         d="forget" class="btn btn-text" type="button">Forget me on this device</button></p>
-      </details>
+
+        <!-- Optional metadata -->
+        <input type="hidden" name="puzzle_id" id="puzzleIdField" value="">
+        <input type="hidden" name="subject" value="GTL signup">
+
+        <div class="actions">
+          <button type="submit" class="btn">Show the answer</button>
+          <span id="gate-msg" class="muted small" aria-live="polite"></span>
+        </div>
+      </form>
+      <!-- ✅ END FORM -->
+      <p class="muted small">We use this one-time check to reduce spoilers and track engagement.</p>
     </section>
 
-    <!-- Not found section: shown if invalid puzzle ID or a load error -->
-    <section id="not-found" class="card danger" style="display:none;">
-      <h2>Not found</h2>
-      <p>We couldn’t find that puzzle. Please scan a valid QR code from the book.</p>
-    </section>
-  </main>
-
-  <script>
-  // === Inline data: answers (avoids answers.json fetch) ===
-  const ANSWERS = [
-    { "id":"01","hero":"Iron Man (Tony Stark)","actor":"Robert Downey Jr." },
-    { "id":"02","hero":"Captain America (Steve Rogers)","actor":"Chris Evans" },
-    { "id":"03","hero":"Thor","actor":"Chris Hemsworth" },
-    { "id":"04","hero":"Hulk (Bruce Banner)","actor":"Mark Ruffalo" },
-    { "id":"05","hero":"Black Widow (Natasha Romanoff)","actor":"Scarlett Johansson" },
+    <!-- Answer: shown after user is verified -->
+    <section id="answer" class="card" style="display:none;">
+      <h2 id="answer-title">Puzzle Answer</h2>
+      <p id="answer-body"></p>
+      <details class="muted small">
+        <summary>Privacy &amp; reset</summary>
+        <p>Your name &amp; email are stored only in this browser (localStorage).
+        <button id="forget" class="btn btn-text" type="button">rlett Johansson" },
     { "id":"06","hero":"Hawkeye (Clint Barton)","actor":"Jeremy Renner" },
     { "id":"07","hero":"Spider-Man (Peter Parker)","actor":"Tom Holland" },
     { "id":"08","hero":"Black Panther (T’Challa)","actor":"Chadwick Boseman" },
@@ -97,11 +101,10 @@
     { "id":"40","hero":"Agatha Harkness","actor":"Kathryn Hahn" }
   ];
 
-  // === App logic ===
+  // === App logic (inline; no external JS) ===
   const STORAGE_KEY = 'gtl_user'; // { name, email, t }
   const qs = new URLSearchParams(window.location.search);
-  const idRaw = qs.get('id');
-  const id = (idRaw || '').toString().padStart(2, '0'); // '01'..'40'
+  const id = String(qs.get('id') || '').padStart(2, '0'); // '01'..'40'
 
   const $ = (sel) => document.querySelector(sel);
   const els = {
@@ -134,42 +137,34 @@
   function hide(el) { if (el) el.style.display = 'none'; }
 
   function showAnswer(entry) {
+    if (!entry) { hide(els.loading); show(els.notFound); return; }
     els.answerTitle.textContent = `Puzzle ${entry.id} — Answer`;
-    els.answerBody.innerHTML = `
-      <strong>Superhero:</strong> ${entry.hero}<br>
-      <strong>Actor:</strong> ${entry.actor}
-    `;
-    hide(els.loading);
-    show(els.answer);
+    els.answerBody.innerHTML = `<strong>Superhero:</strong> ${entry.hero}<br><strong>Actor:</strong> ${entry.actor}`;
+    hide(els.loading); show(els.answer);
   }
 
   (function init(){
-    // Validate puzzle id
+    // Validate id
     if (!/^\d{2}$/.test(id)) { hide(els.loading); show(els.notFound); return; }
 
-    // Find entry
     const entry = ANSWERS.find(x => x.id === id);
     if (!entry) { hide(els.loading); show(els.notFound); return; }
 
     if (els.puzzleIdField) els.puzzleIdField.value = id;
 
-    // Known user?
     const user = getUser();
     if (user && user.email) {
       showAnswer(entry);
     } else {
-      hide(els.loading);
-      show(els.gate);
+      hide(els.loading); show(els.gate);
     }
 
-    // Form submit (AJAX to Formspree)
     if (els.form) {
       els.form.addEventListener('submit', async (e) => {
         e.preventDefault();
         if (els.msg) els.msg.textContent = 'Submitting…';
 
         const formData = new FormData(els.form);
-        // Optional subject for your Formspree inbox
         formData.set('subject', `GTL signup for puzzle ${id}`);
 
         try {
