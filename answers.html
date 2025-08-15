@@ -37,9 +37,18 @@
   <!-- Gate (first-time form) -->
   <section id="gate" class="card">
     <h2>Tell us who you are (one-time)</h2>
+
+    <!-- WHY line (requested wording) -->
+    <p class="muted">
+      Your name and email let us reveal the answer and keep your experience seamless on this device.
+    </p>
+
     <form id="gateForm" method="POST" novalidate>
       <input type="hidden" name="_subject" value="Puzzle Answer Access" />
       <input type="hidden" id="puzzleIdField" name="puzzle_id" />
+      <!-- Optional tagging to help segment in your inbox/integrations -->
+      <input type="hidden" name="tags" value="PuzzleBook2025,AnswerGate" />
+
       <!-- Honeypot (leave blank) -->
       <div class="hidden">
         <label>Do not fill this field</label>
@@ -56,10 +65,30 @@
         <input id="email" name="email" type="email" autocomplete="email" required />
       </div>
 
+      <!-- Optional marketing opt-in (unchecked by default) -->
+      <label class="muted" style="display:flex; gap:.5rem; align-items:flex-start; margin-top:.25rem;">
+        <input type="checkbox" name="subscribe" value="yes" />
+        <span>Keep me posted about new puzzle books and bonus content (occasional emails).</span>
+      </label>
+
       <button id="submitBtn" type="submit">Reveal This Answer</button>
       <div id="formMsg" class="muted" aria-live="polite"></div>
       <div id="formErr" class="error"></div>
-      <p class="muted">We’ll store a small flag in your browser so you won’t have to enter this again on this device.</p>
+
+      <!-- Friendlier reminder line (requested wording) -->
+      <p class="muted" style="margin-top:.5rem;">
+        You’ll only need to provide your details once on this device.
+      </p>
+
+      <!-- Compact privacy notice (collapsible) -->
+      <details class="muted" style="margin-top:.25rem;">
+        <summary>Privacy notice</summary>
+        <p style="margin:.5rem 0 0;">
+          We use your name and email to provide the answer you requested and to prevent repeat prompts on this device.
+          If you tick the updates box, we may email you occasionally about new puzzle books and bonus content.
+          We don’t sell your data. You can opt out anytime by replying “unsubscribe.”
+        </p>
+      </details>
     </form>
   </section>
 
@@ -75,8 +104,9 @@
     </p>
   </section>
 
+  <!-- Footer is optional. You can remove the entire footer block if you prefer. -->
   <footer>
-    <p class="muted">© 2025 Global Publishers.</p>
+    <p class="muted">© 2025</p>
   </footer>
 </main>
 
@@ -86,7 +116,7 @@
  *  ============
  */
 
-// Your Formspree endpoint
+// Your Formspree endpoint (unchanged)
 const FORM_ENDPOINT = "https://formspree.io/f/xrbljyyn";
 
 // Numeric puzzle IDs (1–40). Nothing shows until after access is granted.
