@@ -5,66 +5,30 @@
   <meta charset="utf-8" />
   <title>Puzzle Answer</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- Optional: external CSS; inline styles below are a safety net -->
-  <link rel="stylesheet" href="./style.css" />
   <style>
-    /* Safety styles in case style.css isn't loaded */
     body { margin:0; font:16px/1.55 system-ui,-apple-system,Segoe UI,Roboto,Arial; background:#0b0c10; color:#e6e6e6; }
     .container { max-width: 720px; margin: 3rem auto; padding: 0 1rem; }
     .card { background:#16181d; border-radius:12px; padding:1.2rem 1.4rem; margin:1rem 0; }
-    .danger { border:1px solid #e76f51; }
-    .field { margin:.75rem 0; }
-    label { display:block; margin-bottom:.28rem; }
-    input { width:100%; padding:.65rem .75rem; border-radius:10px; border:1px solid #2b2f39; background:#0e1015; color:#e6e6e6; }
+    .muted { color:#a3a3a3; }
     .btn { display:inline-block; background:#2a9d8f; color:#fff; padding:.6rem .95rem; border-radius:10px; text-decoration:none; border:0; cursor:pointer; }
-    .btn-text { background:transparent; color:#fff; border:1px solid #3b3f49; }
-    .muted { color:#a3a3a3; } .small { font-size:.92rem; }
-    .actions { display:flex; gap:.8rem; align-items:center; flex-wrap:wrap; }
   </style>
 </head>
 <body>
   <main class="container">
-    <!-- Loading -->
-    <div id="loading" class="muted">Loading…</div>
-
-    <!-- Gate: only shown the first time on a device -->
-    <section id="gate" class="card" style="display:none;">
-      <h2>One-time check</h2>
-      <p>Please enter your name and email once to reveal answers on this device.</p>
-
-      <!-- ✅ REAL FORMSPREE FORM (fields + submit button) -->
-      <form id="gate-form" action="https://formspree.io/f/xrbljyyn" method="POST">
-        <div class="field">
-          <label for="name">Name</label>
-          <input id="name" name="name" type="text" autocomplete="name" required />
-        </div>
-        <div class="field">
-          <label for="email">Email</label>
-          <input id="email" name="email" type="email" autocomplete="email" required />
-        </div>
-
-        <!-- Optional: include which puzzle was first viewed -->
-        <input type="hidden" id="puzzleIdField" name="puzzleId" value="" />
-
-        <div class="actions">
-          <button class="btn" type="submit">Show the answer</button>
-          <span id="gate-msg" class="muted small"></span>
-        </div>
-      </form>
-      <!-- ✅ END FORM -->
-
-      <p class="muted small">We use this one-time check to reduce spoilers and track engagement.</p>
+    <section class="card" id="answer-card">
+      <h1 id="title">Puzzle Answer</h1>
+      <p id="body"></p>
+      <p class="muted" id="hint"></p>
     </section>
+  </main>
 
-    <!-- Answer: shown after user is verified -->
-    <section id="answer" class="card" style="display:none;">
-      <h2 id="answer-title">Puzzle Answer</h2>
-      <p id="answer-body"></p>
-      <details class="muted small">
-        <summary>Privacy &amp; reset</summary>
-        <p>Your name &amp; email are stored only in this browser (localStorage).
-          <button id="forget" class="btn btn-text" type="button">Forget me on this device</button>
-       a Romanoff)","actor":"Scarlett Johansson" },
+  <script>
+  const ANSWERS = [
+    { "id":"01","hero":"Iron Man (Tony Stark)","actor":"Robert Downey Jr." },
+    { "id":"02","hero":"Captain America (Steve Rogers)","actor":"Chris Evans" },
+    { "id":"03","hero":"Thor","actor":"Chris Hemsworth" },
+    { "id":"04","hero":"Hulk (Bruce Banner)","actor":"Mark Ruffalo" },
+    { "id":"05","hero":"Black Widow (Natasha Romanoff)","actor":"Scarlett Johansson" },
     { "id":"06","hero":"Hawkeye (Clint Barton)","actor":"Jeremy Renner" },
     { "id":"07","hero":"Spider-Man (Peter Parker)","actor":"Tom Holland" },
     { "id":"08","hero":"Black Panther (T’Challa)","actor":"Chadwick Boseman" },
@@ -102,99 +66,23 @@
     { "id":"40","hero":"Agatha Harkness","actor":"Kathryn Hahn" }
   ];
 
-  // === App logic (self-contained) ===
-  const STORAGE_KEY = 'gtl_user'; // { name, email, t }
-  const qs = new URLSearchParams(window.location.search);
-  const id = String(qs.get('id') || '').padStart(2, '0'); // '01'..'40'
+  const qs = new URLSearchParams(location.search);
+  const id = String(qs.get('id') || '').padStart(2,'0');
+  const entry = ANSWERS.find(x => x.id === id);
 
-  const $ = (sel) => document.querySelector(sel);
-  const els = {
-    loading: $('#loading'),
-    gate: $('#gate'),
-    form: $('#gate-form'),
-    msg: $('#gate-msg'),
-    answer: $('#answer'),
-    answerTitle: $('#answer-title'),
-    answerBody: $('#answer-body'),
-    notFound: $('#not-found'),
-    puzzleIdField: $('#puzzleIdField'),
-    forget: $('#forget'),
-    name: $('#name'),
-    email: $('#email'),
-  };
+  const title = document.getElementById('title');
+  const body = document.getElementById('body');
+  const hint = document.getElementById('hint');
 
-  function getUser() {
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || ''); }
-    catch { return null; }
+  if (!/^\d{2}$/.test(id) || !entry) {
+    title.textContent = 'Not found';
+    body.textContent = 'We couldn’t find that puzzle. Please scan a valid QR code from the book.';
+    hint.textContent = '';
+  } else {
+    title.textContent = `Puzzle ${entry.id} — Answer`;
+    body.innerHTML = `<strong>Superhero:</strong> ${entry.hero}<br><strong>Actor:</strong> ${entry.actor}`;
+    hint.innerHTML = `<span class="muted">Tip: If you’re asked for details again on this device, visit <code>gate.html?next=puzzle.html%3Fid%3D${entry.id}</code>.</span>`;
   }
-  function setUser(name, email) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ name, email, t: Date.now() }));
-  }
-  function forgetUser() {
-    localStorage.removeItem(STORAGE_KEY);
-    location.reload();
-  }
-  function show(el) { if (el) el.style.display = ''; }
-  function hide(el) { if (el) el.style.display = 'none'; }
-
-  function showAnswer(entry) {
-    if (!entry) { hide(els.loading); show(els.notFound); return; }
-    els.answerTitle.textContent = `Puzzle ${entry.id} — Answer`;
-    els.answerBody.innerHTML = `<strong>Superhero:</strong> ${entry.hero}<br><strong>Actor:</strong> ${entry.actor}`;
-    hide(els.loading); show(els.answer);
-  }
-
-  (function init(){
-    // 1) Validate id
-    if (!/^\d{2}$/.test(id)) { hide(els.loading); show(els.notFound); return; }
-
-    // 2) Find the answer
-    const entry = ANSWERS.find(x => x.id === id);
-    if (!entry) { hide(els.loading); show(els.notFound); return; }
-
-    // 3) Fill hidden field for Formspree
-    if (els.puzzleIdField) els.puzzleIdField.value = id;
-
-    // 4) If we already know this browser, show answer immediately
-    const user = getUser();
-    if (user && user.email) { showAnswer(entry); return; }
-
-    // 5) Otherwise show the gate (form)
-    hide(els.loading); show(els.gate);
-
-    // 6) Handle form submit (AJAX to Formspree)
-    if (els.form) {
-      els.form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        if (els.msg) els.msg.textContent = 'Submitting…';
-
-        const formData = new FormData(els.form);
-        // Helpful subject in your Formspree inbox
-        formData.set('subject', `GTL signup for puzzle ${id}`);
-
-        try {
-          const r = await fetch(els.form.action, {
-            method: 'POST',
-            body: formData,
-            headers: { 'Accept': 'application/json' }
-          });
-          if (r.ok) {
-            setUser(els.name.value, els.email.value);
-            showAnswer(entry);
-            hide(els.gate);
-            if (els.msg) els.msg.textContent = '';
-          } else {
-            if (els.msg) els.msg.textContent = 'Submission failed. Please try again.';
-          }
-        } catch (err) {
-          if (els.msg) els.msg.textContent = 'Network error. Please try again.';
-        }
-      });
-    }
-
-    // 7) Forget button
-    if (els.forget) els.forget.addEventListener('click', forgetUser);
-  })();
   </script>
 </body>
 </html>
