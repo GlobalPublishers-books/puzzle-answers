@@ -1,0 +1,87 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Gate • Guess the Legends</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { margin:0; font:16px/1.55 system-ui,-apple-system,Segoe UI,Roboto,Arial; background:#0b0c10; color:#e6e6e6; }
+    .container { max-width: 720px; margin: 3rem auto; padding: 0 1rem; }
+    .card { background:#16181d; border-radius:12px; padding:1.2rem 1.4rem; margin:1rem 0; }
+    .muted { color:#a3a3a3; } .small { font-size:.92rem; }
+    .field { margin:.9rem 0; }
+    label { display:block; margin-bottom:.35rem; }
+    input { width:100%; padding:.7rem .8rem; border-radius:10px; border:1px solid #2b2f39; background:#0e1015; color:#e6e6e6; }
+    .btn { display:inline-block; background:#2a9d8f; color:#fff; padding:.7rem 1rem; border-radius:10px; border:0; cursor:pointer; }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <section class="card" id="content">
+      <h1>One‑time check</h1>
+      <p class="muted">Enter your details once to reveal answers on this device. You’ll be redirected automatically.</p>
+
+      <!-- ✅ Real Formspree form -->
+      https://formspree.io/f/xrbljyyn
+
+      <p class="small muted" style="margin-top:1rem;">
+        Already registered on this device? You’ll be redirected automatically.
+      </p>
+    </section>
+  </main>
+
+  <script>
+  // Gate logic: if already registered, go straight to "next"
+  (function() {
+    const params = new URLSearchParams(location.search);
+    // The "next" param tells gate.html where to send the user after form success (e.g., puzzle.html?id=01)
+    const next = params.get('next') || 'puzzle.html';
+    const puzzleId = (new URLSearchParams(next.split('?')[1] || '')).get('id') || '';
+
+    // Pre-fill hidden fields
+    document.getElementById('nextField').value = next;
+    document.getElementById('puzzleIdField').value = puzzleId;
+    const subject = document.getElementById('subject');
+    if (subject) subject.value = `GTL signup for puzzle ${puzzleId || 'unknown'}`;
+
+    // If the user is already known in this browser, skip the form
+    try {
+      const user = JSON.parse(localStorage.getItem('gtl_user') || '');
+      if (user && user.email) {
+        location.replace(next);
+        return;
+      }
+    } catch (_) {}
+
+    // Otherwise, wire the form
+    const form = document.getElementById('gate-form');
+    const msg = document.getElementById('msg');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      msg.textContent = 'Submitting…';
+
+      const fd = new FormData(form);
+      try {
+        const res = await fetch(form.action, {
+          method: 'POST',
+          body: fd,
+          headers: { 'Accept': 'application/json' }
+        });
+        if (res.ok) {
+          // Save user locally; then go to the requested puzzle
+          localStorage.setItem('gtl_user', JSON.stringify({ 
+            name: fd.get('name'), email: fd.get('email'), t: Date.now()
+          }));
+          location.replace(next);
+        } else {
+          msg.textContent = 'Submission failed. Please try again.';
+        }
+      } catch (err) {
+        msg.textContent = 'Network error. Please try again.';
+      }
+    });
+  })();
+  </script>
+</body>
+</html>
