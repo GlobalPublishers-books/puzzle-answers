@@ -5,7 +5,7 @@
   <meta charset="utf-8" />
   <title>Puzzle Answer</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- Optional: your external CSS; the inline styles below act as a safety net -->
+  <!-- Optional: external CSS; inline styles below act as a safety net -->
   <link rel="stylesheet" href="./style.css" />
   <style>
     /* Safety styles in case style.css isn't loaded */
@@ -32,32 +32,35 @@
       <h2>One-time check</h2>
       <p>Please enter your name and email once to reveal answers on this device.</p>
 
-      <!-- ✅ REAL FORMSPREE FORM -->
-      <form id="gate-form" action="https://formspree.io/f/xrbljyyn" method="POST">
-        <div class="field">
-          <label for="name">Name</label>
-          <input id="name" name="name" type="text" autocomplete="name" required />
-        </div>
-        <div class="field">
-          <label for="email">Email</label>
-          <input id="email" name="email" type="email" autocomplete="email" required />
-        </div>
-
-        <!-- optional: Formspree subject + which puzzle they viewed -->
-        <input type="hidden" name="subject" value="GTL signup" />
-        <input type="hidden" id="puzzleIdField" name="puzzleId" value="" />
-
-        <div class="actions">
-          <button type="submit" class="btn">Show the answer</button>
-          <span id="gate-msg" class="muted small" aria-live="polite"></span>
-        </div>
-      </form>
+      <!-- ✅ REAL FORMSPREE FORM (fields + submit button) -->
+      https://formspree.io/f/xrbljyyn
       <!-- ✅ END FORM -->
 
       <p class="muted small">We use this one-time check to reduce spoilers and track engagement.</p>
     </section>
 
-    <!-- Answer: shown ANSWERS = [
+    <!-- Answer: shown after user is verified -->
+    <section id="answer" class="card" style="display:none;">
+      <h2 id="answer-title">Puzzle Answer</h2>
+      <p id="answer-body"></p>
+      <details class="muted small">
+        <summary>Privacy &amp; reset</summary>
+        <p>Your name &amp; email are stored only in this browser (localStorage).
+          <button id="forget" class="btn btn-text" type="button">Forget me on this device</button>
+        </p>
+      </details>
+    </section>
+
+    <!-- Not found: invalid puzzle id or load error -->
+    <section id="not-found" class="card danger" style="display:none;">
+      <h2>Not found</h2>
+      <p>We couldn’t find that puzzle. Please scan a valid QR code from the book.</p>
+    </section>
+  </main>
+
+  <script>
+  // === Inline answers (no external fetch) ===
+  const ANSWERS = [
     { "id":"01","hero":"Iron Man (Tony Stark)","actor":"Robert Downey Jr." },
     { "id":"02","hero":"Captain America (Steve Rogers)","actor":"Chris Evans" },
     { "id":"03","hero":"Thor","actor":"Chris Hemsworth" },
@@ -155,14 +158,10 @@
 
     // 4) If we already know this browser, show answer immediately
     const user = getUser();
-    if (user && user.email) {
-      showAnswer(entry);
-      return;
-    }
+    if (user && user.email) { showAnswer(entry); return; }
 
     // 5) Otherwise show the gate (form)
-    hide(els.loading);
-    show(els.gate);
+    hide(els.loading); show(els.gate);
 
     // 6) Handle form submit (AJAX to Formspree)
     if (els.form) {
@@ -171,7 +170,7 @@
         if (els.msg) els.msg.textContent = 'Submitting…';
 
         const formData = new FormData(els.form);
-        // Add a useful subject line
+        // Helpful subject in your Formspree inbox
         formData.set('subject', `GTL signup for puzzle ${id}`);
 
         try {
