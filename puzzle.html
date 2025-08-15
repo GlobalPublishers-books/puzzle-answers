@@ -6,6 +6,19 @@
   <title>Puzzle Answer</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="./style.css" />
+  <style>
+    /* Tiny inline safety styles in case style.css hasn’t deployed yet */
+    body { margin:0; font:16px/1.55 system-ui, -apple-system, Segoe UI, Roboto, Arial; background:#0b0c10; color:#e6e6e6; }
+    .container { max-width: 720px; margin: 3rem auto; padding: 0 1rem; }
+    .card { background:#16181d; border-radius:12px; padding:1.2rem 1.4rem; margin:1rem 0; }
+    .danger { border:1px solid #e76f51; }
+    .field { margin:.75rem 0; }
+    label { display:block; margin-bottom:.28rem; }
+    input { width:100%; padding:.65rem .75rem; border-radius:10px; border:1px solid #2b2f39; background:#0e1015; color:#e6e6e6; }
+    .btn { display:inline-block; background:#2a9d8f; color:#fff; padding:.6rem .95rem; border-radius:10px; text-decoration:none; border:0; cursor:pointer; }
+    .btn-text { background:transparent; color:#fff; border:1px solid #3b3f49; }
+    .muted { color:#a3a3a3; } .small { font-size:.92rem; }
+  </style>
 </head>
 <body>
   <main class="container">
@@ -17,19 +30,18 @@
       <h2>One-time check</h2>
       <p>Please enter your name and email once to reveal answers on this device.</p>
 
-      https://formspree.io/f/xrbljyyn
-
-      <p class="muted small">We use this one-time check to reduce spoilers and track engagement.</p>
-    </section>
-
-    <!-- Answer section: shown after user is verified -->
-    <section id="answer" class="card" style="display:none;">
-      <h2 id="answer-title">Puzzle Answer</h2>
-      <p id="answer-body"></p>
-      <details class="muted small">
-        <summary>Privacy &amp; reset</summary>
-        <p>Your name &amp; email are stored only in this browser (localStorage).
-        <button id="forget" class="btn btn-text" type="button">Forget me on this device</button></p>
+      <form id="gate-form" action="https://formspree.io/f/xrbljyyn" method="POST">
+        <input type="hidden" name="puzzleId" id="puzzleIdField" value="">
+        <div class="field">
+          <label for="name">Name</label>
+          <input id="name" name="name" type="text" required autocomplete="name" />
+        </div>
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" required autocomplete="email" />
+        </div>
+        <div class="field">
+         d="forget" class="btn btn-text" type="button">Forget me on this device</button></p>
       </details>
     </section>
 
@@ -40,6 +52,148 @@
     </section>
   </main>
 
-  <script src="./app.js"></script>
+  <script>
+  // === Inline data: answers (avoids answers.json fetch) ===
+  const ANSWERS = [
+    { "id":"01","hero":"Iron Man (Tony Stark)","actor":"Robert Downey Jr." },
+    { "id":"02","hero":"Captain America (Steve Rogers)","actor":"Chris Evans" },
+    { "id":"03","hero":"Thor","actor":"Chris Hemsworth" },
+    { "id":"04","hero":"Hulk (Bruce Banner)","actor":"Mark Ruffalo" },
+    { "id":"05","hero":"Black Widow (Natasha Romanoff)","actor":"Scarlett Johansson" },
+    { "id":"06","hero":"Hawkeye (Clint Barton)","actor":"Jeremy Renner" },
+    { "id":"07","hero":"Spider-Man (Peter Parker)","actor":"Tom Holland" },
+    { "id":"08","hero":"Black Panther (T’Challa)","actor":"Chadwick Boseman" },
+    { "id":"09","hero":"Doctor Strange (Stephen Strange)","actor":"Benedict Cumberbatch" },
+    { "id":"10","hero":"Captain Marvel (Carol Danvers)","actor":"Brie Larson" },
+    { "id":"11","hero":"Ant-Man (Scott Lang)","actor":"Paul Rudd" },
+    { "id":"12","hero":"The Wasp (Hope van Dyne)","actor":"Evangeline Lilly" },
+    { "id":"13","hero":"Scarlet Witch (Wanda Maximoff)","actor":"Elizabeth Olsen" },
+    { "id":"14","hero":"Vision","actor":"Paul Bettany" },
+    { "id":"15","hero":"Star-Lord (Peter Quill)","actor":"Chris Pratt" },
+    { "id":"16","hero":"Gamora","actor":"Zoe Saldana" },
+    { "id":"17","hero":"Drax","actor":"Dave Bautista" },
+    { "id":"18","hero":"Rocket","actor":"Bradley Cooper" },
+    { "id":"19","hero":"Groot","actor":"Vin Diesel" },
+    { "id":"20","hero":"Falcon (Sam Wilson)","actor":"Anthony Mackie" },
+    { "id":"21","hero":"Winter Soldier (Bucky Barnes)","actor":"Sebastian Stan" },
+    { "id":"22","hero":"War Machine (James Rhodes)","actor":"Don Cheadle" },
+    { "id":"23","hero":"Okoye","actor":"Danai Gurira" },
+    { "id":"24","hero":"Shuri","actor":"Letitia Wright" },
+    { "id":"25","hero":"Mantis","actor":"Pom Klementieff" },
+    { "id":"26","hero":"Valkyrie","actor":"Tessa Thompson" },
+    { "id":"27","hero":"Wong","actor":"Benedict Wong" },
+    { "id":"28","hero":"Nebula","actor":"Karen Gillan" },
+    { "id":"29","hero":"Kate Bishop","actor":"Hailee Steinfeld" },
+    { "id":"30","hero":"Yelena Belova","actor":"Florence Pugh" },
+    { "id":"31","hero":"Thanos","actor":"Josh Brolin" },
+    { "id":"32","hero":"Loki","actor":"Tom Hiddleston" },
+    { "id":"33","hero":"Hela","actor":"Cate Blanchett" },
+    { "id":"34","hero":"Erik Killmonger (Erik Stevens)","actor":"Michael B. Jordan" },
+    { "id":"35","hero":"Ultron","actor":"James Spader" },
+    { "id":"36","hero":"Red Skull (Johann Schmidt)","actor":"Hugo Weaving" },
+    { "id":"37","hero":"Ronan the Accuser","actor":"Lee Pace" },
+    { "id":"38","hero":"Taskmaster","actor":"Olga Kurylenko" },
+    { "id":"39","hero":"Mysterio (Quentin Beck)","actor":"Jake Gyllenhaal" },
+    { "id":"40","hero":"Agatha Harkness","actor":"Kathryn Hahn" }
+  ];
+
+  // === App logic ===
+  const STORAGE_KEY = 'gtl_user'; // { name, email, t }
+  const qs = new URLSearchParams(window.location.search);
+  const idRaw = qs.get('id');
+  const id = (idRaw || '').toString().padStart(2, '0'); // '01'..'40'
+
+  const $ = (sel) => document.querySelector(sel);
+  const els = {
+    loading: $('#loading'),
+    gate: $('#gate'),
+    form: $('#gate-form'),
+    msg: $('#gate-msg'),
+    answer: $('#answer'),
+    answerTitle: $('#answer-title'),
+    answerBody: $('#answer-body'),
+    notFound: $('#not-found'),
+    puzzleIdField: $('#puzzleIdField'),
+    forget: $('#forget'),
+    name: $('#name'),
+    email: $('#email'),
+  };
+
+  function getUser() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || ''); }
+    catch { return null; }
+  }
+  function setUser(name, email) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ name, email, t: Date.now() }));
+  }
+  function forgetUser() {
+    localStorage.removeItem(STORAGE_KEY);
+    location.reload();
+  }
+  function show(el) { if (el) el.style.display = ''; }
+  function hide(el) { if (el) el.style.display = 'none'; }
+
+  function showAnswer(entry) {
+    els.answerTitle.textContent = `Puzzle ${entry.id} — Answer`;
+    els.answerBody.innerHTML = `
+      <strong>Superhero:</strong> ${entry.hero}<br>
+      <strong>Actor:</strong> ${entry.actor}
+    `;
+    hide(els.loading);
+    show(els.answer);
+  }
+
+  (function init(){
+    // Validate puzzle id
+    if (!/^\d{2}$/.test(id)) { hide(els.loading); show(els.notFound); return; }
+
+    // Find entry
+    const entry = ANSWERS.find(x => x.id === id);
+    if (!entry) { hide(els.loading); show(els.notFound); return; }
+
+    if (els.puzzleIdField) els.puzzleIdField.value = id;
+
+    // Known user?
+    const user = getUser();
+    if (user && user.email) {
+      showAnswer(entry);
+    } else {
+      hide(els.loading);
+      show(els.gate);
+    }
+
+    // Form submit (AJAX to Formspree)
+    if (els.form) {
+      els.form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (els.msg) els.msg.textContent = 'Submitting…';
+
+        const formData = new FormData(els.form);
+        // Optional subject for your Formspree inbox
+        formData.set('subject', `GTL signup for puzzle ${id}`);
+
+        try {
+          const r = await fetch(els.form.action, {
+            method: 'POST',
+            body: formData,
+            headers: { 'Accept': 'application/json' }
+          });
+          if (r.ok) {
+            setUser(els.name.value, els.email.value);
+            showAnswer(entry);
+            hide(els.gate);
+            if (els.msg) els.msg.textContent = '';
+          } else {
+            if (els.msg) els.msg.textContent = 'Submission failed. Please try again.';
+          }
+        } catch (err) {
+          if (els.msg) els.msg.textContent = 'Network error. Please try again.';
+        }
+      });
+    }
+
+    if (els.forget) els.forget.addEventListener('click', forgetUser);
+  })();
+  </script>
 </body>
 </html>
